@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "stackedbot"
+version = "0.1.0"
+description = ""
+authors = ["Deathwing"]
+
+[tool.poetry.dependencies]
+python = "^3.7.9"
+discord = "^1.0.1"
+aiocron = "^1.4"
+chatterbot = "^1.0.8"
+spacy = "^2.1.3"
+wikipedia = "^1.4.0"
+googletrans = "^3.0.0"
+flag = "^0.1.1"
+python-dotenv = "^0.15.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

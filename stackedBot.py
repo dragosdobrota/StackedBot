@@ -14,7 +14,7 @@ import flag
 import wikipedia
 
 # Chat bot
-from chatterbot import ChatBot
+from chatterbot import ChatBot, languages
 from chatterbot.trainers import ChatterBotCorpusTrainer, ListTrainer
 
 # Load environment
@@ -32,6 +32,8 @@ from googletrans import Translator
 
 load_dotenv()
 
+# Fixing spacy at runtime, it is required to previously call 'python -m spacy download en'
+languages.ENG.ISO_639_1 = 'en_core_web_sm'
 
 # Read codec file for language codes
 def readCodeFile(filename):
