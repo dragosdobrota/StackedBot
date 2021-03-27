@@ -1,4 +1,5 @@
 import os
+import pathlib
 import shelve
 
 # Datetime calculations
@@ -509,7 +510,7 @@ class StackedBot(discord.Client):
 
     # HALP!
     def help(self, message):
-        response = f"Version {BOT_VERSION}\n"
+        response = f"Version {get_version()}\n"
         response += "!event  - Todays events\n"
         response += "!events - This weeks events\n"
         response += "!whatis <keyword> - Explains what keyword is\n"
@@ -656,6 +657,17 @@ class StackedBot(discord.Client):
 
         response += "```"
         return response
+
+
+def get_version():
+    """Returns the bot version as the timestamp of this file"""
+
+    fname = pathlib.Path(__file__)
+    if fname.exists():
+        mtime = datetime.fromtimestamp(fname.stat().st_mtime)
+        return mtime.strftime("%Y-%m-%d %H:%M")
+    else:
+        return "?"
 
 
 if __name__ == "__main__":
