@@ -28,6 +28,7 @@ from googletrans import Translator
 # from google.oauth2 import service_account
 # SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 # SPREAD_SHEET='1ksHbbJGGaPI4ytMUeXfNmy33ejuw3YznP4XDor1GaMA'
+BOT_VERSION = "20210327,1340"
 
 
 load_dotenv()
@@ -59,7 +60,10 @@ def loadPlugin(plugin_class):
 
 class StackedBot(discord.Client):
     def __init__(self):
-        super().__init__()
+        # intents to send messages to users
+        intents = discord.Intents.default()
+        intents.members = True
+        super().__init__(intents=intents)
 
         # Channels
         self.com_channels = {
@@ -330,7 +334,7 @@ class StackedBot(discord.Client):
         self.add_notification("0 5,12,18,21 * * * 0", None, "mystical")
 
         # Emblem refresh
-        self.add_notification("0 2,5,8,11,14,17,20,23 * * * 0", None, "emblem")
+        self.add_notification("0 5,8,11,14,17,20,23 * * * 0", None, "emblem")
 
         # Premium Cards
         self.add_notification(
@@ -379,7 +383,8 @@ class StackedBot(discord.Client):
             message = f"{msg.capitalize()} store has refreshed"
             for id in self.remind_me[msg]:
                 user = self.guilds[0].get_member(id)
-                await user.send(message)
+                if user:
+                    await user.send(message)
 
     # Reaction translation stuff
     async def on_raw_reaction_add(self, reactionEvent):
@@ -504,7 +509,8 @@ class StackedBot(discord.Client):
 
     # HALP!
     def help(self, message):
-        response = "!event  - Todays events\n"
+        response = f"Version {BOT_VERSION}\n"
+        response += "!event  - Todays events\n"
         response += "!events - This weeks events\n"
         response += "!whatis <keyword> - Explains what keyword is\n"
         response += "!addis <keyword> <explanation> - Teach me what keyword means\n"
