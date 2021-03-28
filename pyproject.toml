@@ -11,8 +11,8 @@ aiocron = "^1.4"
 chatterbot = "^1.0.8"
 spacy = "^2.1.3"
 wikipedia = "^1.4.0"
-googletrans = "^3.0.0"
-flag = "^0.1.1"
+googletrans = "^4.0.0rc1"
+emoji-country-flag = "^1.2.4"
 python-dotenv = "^0.15.0"
 
 [tool.poetry.dev-dependencies]

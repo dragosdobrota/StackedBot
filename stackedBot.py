@@ -16,7 +16,7 @@ import wikipedia
 
 # Chat bot
 from chatterbot import ChatBot, languages
-from chatterbot.trainers import ChatterBotCorpusTrainer, ListTrainer
+from chatterbot.trainers import ListTrainer
 
 # Load environment
 from dotenv import load_dotenv
@@ -29,8 +29,6 @@ from googletrans import Translator
 # from google.oauth2 import service_account
 # SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 # SPREAD_SHEET='1ksHbbJGGaPI4ytMUeXfNmy33ejuw3YznP4XDor1GaMA'
-BOT_VERSION = "20210327,1340"
-
 
 load_dotenv()
 
@@ -64,6 +62,7 @@ class StackedBot(discord.Client):
         # intents to send messages to users
         intents = discord.Intents.default()
         intents.members = True
+        intents.reactions = True
         super().__init__(intents=intents)
 
         # Channels
@@ -105,7 +104,6 @@ class StackedBot(discord.Client):
             database_uri="sqlite:///database.db",
         )
         self.trainer = ListTrainer(self.bot, show_training_progress=False)
-        self.initialize_bot = False
         self.initialize_with_corpus = True
 
     # Clean message string
@@ -115,10 +113,17 @@ class StackedBot(discord.Client):
             if msg.startswith(">"):
                 msg = msg.split("\n")[1]
             if msg.startswith("@"):
-                msg = msg.split(" ", 1)
-                if len(msg) != 2:
-                    return None
-                msg = msg[1]
+                found_user_mention = False
+                for member in message.mentions:
+                    member_name = member.nick if member.nick is not None else member.name
+                    if msg.startswith(f'@{member_name}'):
+                        msg = msg.replace(f'@{member_name}', '', 1)
+                        found_user_mention = True
+                if not found_user_mention:
+                    msg = msg.split(" ", 1)
+                    if len(msg) != 2:
+                        return None
+                    msg = msg[1]
             if "@" in msg:
                 msg = msg.replace("@", "")
         except:
@@ -156,54 +161,7 @@ class StackedBot(discord.Client):
         # Setup notifications
         self.setup_notifications()
 
-        # Train bot if needed
-        if self.initialize_bot:
-            await self.train_bot()
-
         self.initialized = True
-
-    # Train the bot from our history, and perhaps a corpus
-    async def train_bot(self):
-        if self.initialize_with_corpus:
-            corpTrainer = ChatterBotCorpusTrainer(self.bot)
-            corpTrainer.train(
-                "chatterbot.corpus.english.ai",
-                "chatterbot.corpus.english.botprofile",
-                "chatterbot.corpus.english.computers",
-                "chatterbot.corpus.english.conversations",
-                "chatterbot.corpus.english.emotion",
-                "chatterbot.corpus.english.food",
-                "chatterbot.corpus.english.gossip",
-                "chatterbot.corpus.english.greetings",
-                "chatterbot.corpus.english.health",
-                "chatterbot.corpus.english.history",
-                "chatterbot.corpus.english.humor",
-                "chatterbot.corpus.english.literature",
-                "chatterbot.corpus.english.money",
-                "chatterbot.corpus.english.movies",
-                "chatterbot.corpus.english.politics",
-                "chatterbot.corpus.english.psychology",
-                "chatterbot.corpus.english.science",
-                "chatterbot.corpus.english.sports",
-                "chatterbot.corpus.english.trivia",
-            )
-        print("Some history")
-        for channel in self.guilds[0].channels:
-            if channel.type is discord.ChannelType.text:
-                print(f"reading history for {channel.name}")
-                history = []
-                try:
-                    async for message in channel.history(limit=None, oldest_first=True):
-                        if message.author != client.user:
-                            msg = self.clean_message(message)
-                            if msg is not None:
-                                history.append(msg)
-                except:
-                    pass
-
-                print(f"Training set {channel.name}: {len(history)}")
-                self.trainer.train(history)
-        print("history done")
 
     # The actual ingame time!
     def ingame_time(self):
@@ -418,6 +376,13 @@ class StackedBot(discord.Client):
             await message.channel.send(
                 f'"{message.content}" in {translated.dest} is: ```{translated.text}```'
             )
+        except ValueError as e:
+            print(f"tried translate to {language}")
+
+            if str(e) == 'invalid destination language':
+                await message.channel.send(
+                    f'I can\'t translate into {language} yet!'
+                )
         except:
             print(f"tried translate to {language}")
             print(f"msg: {message.reactions}")
