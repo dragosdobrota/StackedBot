@@ -10,6 +10,8 @@ from functools import partial
 import aiocron
 import discord
 import flag
+# Urban dictionary lookups
+import urbanpython
 
 # Wikipedia lookups
 import wikipedia
@@ -33,7 +35,9 @@ from googletrans import Translator
 load_dotenv()
 
 # Fixing spacy at runtime, it is required to previously call 'python -m spacy download en'
-languages.ENG.ISO_639_1 = 'en_core_web_sm'
+languages.ENG.ISO_639_1 = "en_core_web_sm"
+
+URBAN_DICTIONARY_API_KEY = os.getenv("URBAN_DICTIONARY_API_KEY")
 
 # Read codec file for language codes
 def readCodeFile(filename):
@@ -115,9 +119,11 @@ class StackedBot(discord.Client):
             if msg.startswith("@"):
                 found_user_mention = False
                 for member in message.mentions:
-                    member_name = member.nick if member.nick is not None else member.name
-                    if msg.startswith(f'@{member_name}'):
-                        msg = msg.replace(f'@{member_name}', '', 1)
+                    member_name = (
+                        member.nick if member.nick is not None else member.name
+                    )
+                    if msg.startswith(f"@{member_name}"):
+                        msg = msg.replace(f"@{member_name}", "", 1)
                         found_user_mention = True
                 if not found_user_mention:
                     msg = msg.split(" ", 1)
@@ -379,10 +385,8 @@ class StackedBot(discord.Client):
         except ValueError as e:
             print(f"tried translate to {language}")
 
-            if str(e) == 'invalid destination language':
-                await message.channel.send(
-                    f'I can\'t translate into {language} yet!'
-                )
+            if str(e) == "invalid destination language":
+                await message.channel.send(f"I can't translate into {language} yet!")
         except:
             print(f"tried translate to {language}")
             print(f"msg: {message.reactions}")
@@ -449,6 +453,8 @@ class StackedBot(discord.Client):
         # 	response = self.handle_sheet(msg)
         elif msg.startswith("!lookup"):
             response = self.wikipedia_lookup(msg)
+        elif msg.startswith("!urban"):
+            response = self.urban_lookup(msg)
         elif msg.startswith("!remindme"):
             response = self.handle_remind_me(full_message)
         return response
@@ -460,18 +466,19 @@ class StackedBot(discord.Client):
         event = msg.split()
         if len(event) == 1:
             return 'What event you want to be reminded of? "emblem" or "mystical"?'
-        if event[1] not in valid_events:
+        event_name = event[1]
+        if event_name not in valid_events:
             return "Don't know that event..."
 
-        if event[1] not in self.remind_me:
-            self.remind_me[event[1]] = []
+        if event_name not in self.remind_me:
+            self.remind_me[event_name] = []
 
-        if message.author.id in self.remind_me[event[1]]:
-            self.remind_me[event[1]].remove(message.author.id)
-            return f"I'll stop reminding you of {event[1]}"
+        if message.author.id in self.remind_me[event_name]:
+            self.remind_me[event_name].remove(message.author.id)
+            return f"I'll stop reminding you of {event_name}"
         else:
-            self.remind_me[event[1]].append(message.author.id)
-            return f"I'll remind you of {event[1]}"
+            self.remind_me[event_name].append(message.author.id)
+            return f"I'll remind you of {event_name}"
 
     # HALP!
     def help(self, message):
@@ -488,7 +495,8 @@ class StackedBot(discord.Client):
         response += (
             "React to a message with your flag, and I'll translate that for you\n"
         )
-        response += "!lookup <stuff> - I'll lookup stuff on wikipedia\n"
+        response += "!lookup <stuff> - I'll lookup stuff on Wikipedia\n"
+        response += "!urban <stuff> - I'll lookup stuff on Urban Dictionary\n"
         response += "!remindme <event> - I'll notify you about event in pm\n"
         response += "Mention me and I'll respond something stupid :partying_face:"
 
@@ -515,7 +523,7 @@ class StackedBot(discord.Client):
     def wikipedia_lookup(self, query):
         keywords = query.split(" ", 1)
         if len(keywords) == 1:
-            return "what do you wan't me to lookup?"
+            return "what do you want me to lookup?"
 
         keyword = keywords[1]
 
@@ -530,6 +538,23 @@ class StackedBot(discord.Client):
                         pass
             except:
                 pass
+        return "I don't know about " + keyword
+
+    def urban_lookup(self, query):
+        """Urban dictionary lookup"""
+        keywords = query.split(" ", 1)
+        if len(keywords) == 1:
+            return "what do you want me to lookup?"
+
+        keyword = keywords[1]
+
+        try:
+            urban = urbanpython.Urban(URBAN_DICTIONARY_API_KEY)
+            result = urban.search(keyword)
+            return result.definition
+        except Exception as ex:
+            logging.debug(ex)
+            pass
         return "I don't know about " + keyword
 
     # Calculates progression in KvK based on current situation
@@ -616,9 +641,9 @@ class StackedBot(discord.Client):
             response += "Friday 2200    - Kingdom vs Kingdom ends\n"
 
         if daily and day_of_week in [6, 7]:
-            response += "Dragon utopia is open :gem:\n"
+            response += "Dragon Utopia is open :gem:\n"
         elif not daily:
-            response += "Saturday and Sunday - Dragon utopia is open :gem:\n"
+            response += "Saturday and Sunday - Dragon Utopia is open :gem:\n"
 
         response += "```"
         return response
