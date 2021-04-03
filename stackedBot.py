@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import pathlib
 import shelve
@@ -31,6 +32,7 @@ from googletrans import Translator
 # from google.oauth2 import service_account
 # SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 # SPREAD_SHEET='1ksHbbJGGaPI4ytMUeXfNmy33ejuw3YznP4XDor1GaMA'
+
 
 load_dotenv()
 
@@ -563,6 +565,7 @@ class StackedBot(discord.Client):
             result = f"**Definition**: {item1['definition']}\n**Example**: {item1['example']}"
             return result[:DISCORD_CHAR_LIMIT]
         except Exception as ex:
+            logging.debug(ex)
             pass
         return "I don't know about " + keyword
 
@@ -670,6 +673,13 @@ def get_version():
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger("discord")
+    logger.setLevel(logging.DEBUG)
+    handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+    )
+    logger.addHandler(handler)
     token = os.getenv("DISCORD_TOKEN")
     client = StackedBot()
     client.run(token)
