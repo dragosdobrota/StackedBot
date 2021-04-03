@@ -1,3 +1,4 @@
+import json
 import os
 import pathlib
 import shelve
@@ -10,8 +11,7 @@ from functools import partial
 import aiocron
 import discord
 import flag
-# Urban dictionary lookups
-import urbanpython
+import requests
 
 # Wikipedia lookups
 import wikipedia
@@ -38,6 +38,8 @@ load_dotenv()
 languages.ENG.ISO_639_1 = "en_core_web_sm"
 
 URBAN_DICTIONARY_API_KEY = os.getenv("URBAN_DICTIONARY_API_KEY")
+# char limit in Discord when sending a message
+DISCORD_CHAR_LIMIT = 2000
 
 # Read codec file for language codes
 def readCodeFile(filename):
@@ -541,7 +543,7 @@ class StackedBot(discord.Client):
         return "I don't know about " + keyword
 
     def urban_lookup(self, query):
-        """Urban dictionary lookup"""
+        """Urban dictionary lookup (1st response and example)"""
         keywords = query.split(" ", 1)
         if len(keywords) == 1:
             return "what do you want me to lookup?"
@@ -549,11 +551,18 @@ class StackedBot(discord.Client):
         keyword = keywords[1]
 
         try:
-            urban = urbanpython.Urban(URBAN_DICTIONARY_API_KEY)
-            result = urban.search(keyword)
-            return result.definition
+            url = "https://mashape-community-urban-dictionary.p.rapidapi.com/define"
+            querystring = {"term": keyword}
+            headers = {
+                "x-rapidapi-key": f"{URBAN_DICTIONARY_API_KEY}",
+                "x-rapidapi-host": "mashape-community-urban-dictionary.p.rapidapi.com",
+            }
+            response = requests.request("GET", url, headers=headers, params=querystring)
+            response_list = json.loads(response.content)["list"]
+            item1 = response_list[0]  # 1st result if any
+            result = f"**Definition**: {item1['definition']}\n**Example**: {item1['example']}"
+            return result[:DISCORD_CHAR_LIMIT]
         except Exception as ex:
-            logging.debug(ex)
             pass
         return "I don't know about " + keyword
 
