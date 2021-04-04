@@ -543,7 +543,10 @@ class StackedBot(discord.Client):
         return "I don't know about " + keyword
 
     def urban_lookup(self, query):
-        """Urban dictionary lookup (1st response and example)"""
+        """
+        Urban dictionary lookup
+        Returns the definition (and example) with the most "thumbs_up"
+        """
         keywords = query.split(" ", 1)
         if len(keywords) == 1:
             return "what do you want me to lookup?"
@@ -559,8 +562,10 @@ class StackedBot(discord.Client):
             }
             response = requests.request("GET", url, headers=headers, params=querystring)
             response_list = json.loads(response.content)["list"]
-            item1 = response_list[0]  # 1st result if any
-            result = f"**Definition**: {item1['definition']}\n**Example**: {item1['example']}"
+            item = max(response_list, key=lambda item: int(item["thumbs_up"]))
+            result = (
+                f"**Definition**: {item['definition']}\n**Example**: {item['example']}"
+            )
             return result[:DISCORD_CHAR_LIMIT]
         except Exception as ex:
             pass
