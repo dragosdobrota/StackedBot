@@ -11,6 +11,7 @@ from functools import partial
 import aiocron
 import discord
 import flag
+import inspirobot
 import requests
 
 # Wikipedia lookups
@@ -31,6 +32,7 @@ from googletrans import Translator
 # from google.oauth2 import service_account
 # SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 # SPREAD_SHEET='1ksHbbJGGaPI4ytMUeXfNmy33ejuw3YznP4XDor1GaMA'
+
 
 load_dotenv()
 
@@ -457,6 +459,8 @@ class StackedBot(discord.Client):
             response = self.wikipedia_lookup(msg)
         elif msg.startswith("!urban"):
             response = self.urban_lookup(msg)
+        elif msg.startswith("!inspireme"):
+            response = self.inspireme(msg)
         elif msg.startswith("!remindme"):
             response = self.handle_remind_me(full_message)
         return response
@@ -499,6 +503,7 @@ class StackedBot(discord.Client):
         )
         response += "!lookup <stuff> - I'll lookup stuff on Wikipedia\n"
         response += "!urban <stuff> - I'll lookup stuff on Urban Dictionary\n"
+        response += "!inspireme - I'll generate an inspirational quote\n"
         response += "!remindme <event> - I'll notify you about event in pm\n"
         response += "Mention me and I'll respond something stupid :partying_face:"
 
@@ -570,6 +575,15 @@ class StackedBot(discord.Client):
         except Exception as ex:
             pass
         return "I don't know about " + keyword
+
+    def inspireme(self, message):
+        """inspirobot.me quote"""
+        try:
+            quote = inspirobot.generate()  # Generate Image
+            return quote.url
+        except Exception as ex:
+            pass
+        return "Something went wrong :poop:"
 
     # Calculates progression in KvK based on current situation
     def kvk_calc(self, message):

@@ -14,6 +14,7 @@ wikipedia = "^1.4.0"
 googletrans = "^4.0.0rc1"
 emoji-country-flag = "^1.2.4"
 python-dotenv = "^0.15.0"
+inspiro = "^0.0.2"
 
 [tool.poetry.dev-dependencies]
 
