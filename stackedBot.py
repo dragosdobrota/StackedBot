@@ -76,8 +76,8 @@ class StackedBot(discord.Client):
         # Channels
         self.com_channels = {
             "guild": None,
-            "server": None,
-            "public": None,
+            "public-eu": None,
+            "public-na": None,
             "lobby": None,
         }
 
@@ -148,14 +148,11 @@ class StackedBot(discord.Client):
 
         self.everyone = self.guilds[0].default_role
 
-        self.com_channels["guild"] = self.guilds[0].get_channel(
-            int(os.getenv("GUILD_CHANNEL"))
+        self.com_channels["public-eu"] = self.guilds[0].get_channel(
+            int(os.getenv("PUBLIC_EU_CHANNEL"))
         )
-        self.com_channels["server"] = self.guilds[0].get_channel(
-            int(os.getenv("SERVER_CHANNEL"))
-        )
-        self.com_channels["public"] = self.guilds[0].get_channel(
-            int(os.getenv("PUBLIC_CHANNEL"))
+        self.com_channels["public-na"] = self.guilds[0].get_channel(
+            int(os.getenv("PUBLIC_EU_CHANNEL"))
         )
         self.com_channels["lobby"] = self.guilds[0].get_channel(
             int(os.getenv("LOBBY_CHANNEL"))
@@ -169,7 +166,8 @@ class StackedBot(discord.Client):
         print(f"{self.user.name} has connected to {self.guilds}!")
 
         # Setup notifications
-        self.setup_notifications()
+        self.setup_notifications("public-eu", 1)
+        self.setup_notifications("public-na", -6)
 
         self.initialized = True
 
@@ -178,91 +176,108 @@ class StackedBot(discord.Client):
         return datetime.now(timezone.utc) + timedelta(hours=1)
 
     # Initialize notifications
-    def setup_notifications(self):
+    def setup_notifications(self, channelId, tz):
         self.cronTab = []
 
         self.add_notification(
             "30 11,17,20 * * * 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "Energy to be claimed! Go go!",
         )
 
         self.add_notification(
             "0 12 * * 1,4 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "Dragon is invading! Remember to fix ballista!",
         )
         self.add_notification(
             "30 20 * * 1,4 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "Dragon is leaving in 30 minutes! Remember to fix ballista!",
         )
 
         self.add_notification(
             "0 21 * * * 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "Guild reward packs! Go claim some lewt!",
         )
 
         self.add_notification(
-            "45 20 * * * 0", self.com_channels["public"], "15 minutes to arena rewards"
+            "45 20 * * * 0", 
+            tz,
+            self.com_channels[channelId], 
+            "15 minutes to arena rewards",
         )
 
         self.add_notification(
             "15 21 * * * 0",
-            self.com_channels["guild"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to underground rewards! Go get em castles :partying_face:",
         )
 
         self.add_notification(
             "0 5 * * 3 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "Sphinx is coming today, save up some movement!",
         )
         self.add_notification(
             "0 9 * * 3 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "Sphinx is here, go play trivia!",
         )
 
         # KvK
         self.add_notification(
             "45 8 * * 3 0",
-            self.com_channels["server"],
+            tz,
+            self.com_channels[channelId],
             f"15 minutes to KvK starts!! {self.everyone}",
         )
         self.add_notification(
             "45 8 * * 4,5 0",
-            self.com_channels["server"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes till today's KvK rounds start!",
         )
         self.add_notification(
             "45 21 * * 3,4 0",
-            self.com_channels["server"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to KvK rewards! Go get em Kingdoms :partying_face:",
         )
         self.add_notification(
             "45 21 * * 5 0",
-            self.com_channels["server"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to KvK ends! Go get em Kingdoms :partying_face:",
         )
 
         # BoG
         self.add_notification(
             "45 19 * * 2 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to group game in BoG! Remember rosters!",
             StackedBot.bog_week,
         )
         self.add_notification(
             "45 19 * * 3 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to Battle of Gods quarter finals! Go place your bets and rosters :partying_face:",
             StackedBot.bog_week,
         )
         self.add_notification(
             "45 19 * * 4 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to Battle of Gods finals! Go place your bets and rosters :partying_face:",
             StackedBot.bog_week,
         )
@@ -270,19 +285,22 @@ class StackedBot(discord.Client):
         # CoG
         self.add_notification(
             "15 19 * * 2 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to qualification games in CoG! Remember rosters!",
             StackedBot.cog_week,
         )
         self.add_notification(
             "15 19 * * 3 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to qualification games in CoG  Remember rosters",
             StackedBot.cog_week,
         )
         self.add_notification(
             "15 19 * * 4 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             "15 minutes to CoG finals! Go place your bets and rosters :partying_face:",
             StackedBot.cog_week,
         )
@@ -290,30 +308,43 @@ class StackedBot(discord.Client):
         # Endless inferno
         self.add_notification(
             "0 9 * * 1,4 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             '"Endless" inferno is here, go climb the ladder!',
         )
         self.add_notification(
             "30 11 * * 1,4 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             '"Endless" inferno refresh in 30 minutes!',
         )
 
         # Mystical store
-        self.add_notification("0 5,12,18,21 * * * 0", None, "mystical")
+        self.add_notification(
+            "0 5,12,18,21 * * * 0",
+            tz, 
+            None, 
+            "mystical",
+        )
 
         # Emblem refresh
-        self.add_notification("0 5,8,11,14,17,20,23 * * * 0", None, "emblem")
+        self.add_notification(
+            "0 5,8,11,14,17,20,23 * * * 0",
+            tz,
+            None,
+            "emblem",
+        )
 
         # Premium Cards
         self.add_notification(
             "0 5 1 * * 0",
-            self.com_channels["public"],
+            tz,
+            self.com_channels[channelId],
             f"New premium deck out! Activate it BEFORE starting dailies! {self.everyone}",
         )
 
     # Wrapper for adding notifications
-    def add_notification(self, time, channel, message, active=None):
+    def add_notification(self, time, tz, channel, message, active=None):
         self.cronTab.append(
             aiocron.crontab(
                 time,
@@ -321,7 +352,7 @@ class StackedBot(discord.Client):
                     StackedBot.send_notification, self, channel, message, active
                 ),
                 start=True,
-                tz=timezone(timedelta(hours=1)),
+                tz=timezone(timedelta(hours=tz)),
             )
         )
 
