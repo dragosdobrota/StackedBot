@@ -152,7 +152,7 @@ class StackedBot(discord.Client):
             int(os.getenv("PUBLIC_EU_CHANNEL"))
         )
         self.com_channels["public-na"] = self.guilds[0].get_channel(
-            int(os.getenv("PUBLIC_EU_CHANNEL"))
+            int(os.getenv("PUBLIC_NA_CHANNEL"))
         )
         self.com_channels["lobby"] = self.guilds[0].get_channel(
             int(os.getenv("LOBBY_CHANNEL"))
