@@ -75,7 +75,6 @@ class StackedBot(discord.Client):
 
         # Channels
         self.com_channels = {
-            "guild": None,
             "public-eu": None,
             "public-na": None,
             "lobby": None,
