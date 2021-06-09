@@ -585,16 +585,17 @@ class StackedBot(discord.Client):
     # Role registration
     async def handle_role(self, message):
         valid_roles = ["EU", "NA"]
-        msg = message.content.lower()
+        msg = message.content
         role_raw = msg.split()
         if len(role_raw) == 1:
             return 'What role you want to be added to? "EU" or "NA"?'
         role_name = role_raw[1]
         if role_name not in valid_roles:
-            return "Don't know that role..."
+            return "Don't know that role... (supported 'EU' and 'NA')"
 
-        role = self.region_configs[role_name]["role"]
-        if role in message.author:
+        role = self.region_configs[Region[role_name.upper()]]["role"]
+        if role in message.author.roles:
+            await message.author.remove_roles(role)
             return f"I'll stop notifying you of {role_name} events"
         else:
             await message.author.add_roles(role)
@@ -603,14 +604,14 @@ class StackedBot(discord.Client):
     # HALP!
     def help(self, message):
         response = f"Version {get_version()}\n"
-        response += "!event  - Todays events\n"
-        response += "!events - This weeks events\n"
+        response += "!event <Region=[Default:EU, NA]> - Todays events\n"
+        response += "!events <Region=[Default:EU, NA]> - This weeks events\n"
         response += "!whatis <keyword> - Explains what keyword is\n"
         response += "!addis <keyword> <explanation> - Teach me what keyword means\n"
         response += "!remis <keyword> - Deletes my knowledge of keyword\n"
         response += (
             "!kvkcalc <OurCurrent> <TheirCurrent> <OurGain1> <TheirGain1> "
-            "<OurGain2> <TheirGain2> <OurGain3> <TheirGain3> - See if we win KvK\n"
+            "<OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Region=[Default:EU, NA]> - See if we win KvK\n"
         )
         response += (
             "React to a message with your flag, and I'll translate that for you\n"
@@ -619,6 +620,7 @@ class StackedBot(discord.Client):
         response += "!urban <stuff> - I'll lookup stuff on Urban Dictionary\n"
         response += "!inspireme - I'll generate an inspirational quote\n"
         response += "!remindme <event> - I'll notify you about event in pm\n"
+        response += "!role <EU/NA> - I'll notify you about events for that region in pm\n"
         response += "Mention me and I'll respond something stupid :partying_face:"
 
         return response
@@ -706,7 +708,7 @@ class StackedBot(discord.Client):
         if len(components) < 9 or len(components) > 10:
             return (
                 "Usage: !kvkcalc <OurCurrent> <TheirCurrent> <OurGain1> "
-                "<TheirGain1> <OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <region=EU>"
+                "<TheirGain1> <OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Region=[Default:EU, NA]>"
             )
         try:
             ourCurrent = int(components[1])
@@ -714,7 +716,7 @@ class StackedBot(discord.Client):
             ourGain = [int(components[3]), int(components[5]), int(components[7])]
             theirGain = [int(components[4]), int(components[6]), int(components[8])]
             if len(components) == 10:
-                region = Region[components[9]]
+                region = Region[components[9].upper()]
         except:
             return "Could not understand that.."
 
@@ -741,11 +743,11 @@ class StackedBot(discord.Client):
         region = Region.EU
         if len(components) < 1 or len(components) > 2:
             return (
-                "Usage: !event(s) <region=EU>"
+                "Usage: !event(s) <Region=[Default:EU, NA]>"
             )
         try:
             if len(components) == 2:
-                region = Region[components[1]]
+                region = Region[components[1].upper()]
         except:
             return "Could not understand that.."
 
