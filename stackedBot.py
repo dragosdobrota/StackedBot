@@ -33,6 +33,10 @@ from googletrans import Translator
 # SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 # SPREAD_SHEET='1ksHbbJGGaPI4ytMUeXfNmy33ejuw3YznP4XDor1GaMA'
 
+from enum import Enum
+class Region(Enum):
+    EU = 1
+    NA = 2
 
 load_dotenv()
 
@@ -72,6 +76,13 @@ class StackedBot(discord.Client):
         intents.members = True
         intents.reactions = True
         super().__init__(intents=intents)
+
+        # Roles
+        self.com_roles = {
+            "eu": None,
+            "na": None,
+            "everyone": None,
+        }
 
         # Channels
         self.com_channels = {
@@ -145,7 +156,13 @@ class StackedBot(discord.Client):
         if self.initialized:
             return
 
-        self.everyone = self.guilds[0].default_role
+        self.com_roles["eu"] = self.guilds[0].get_role(
+            int(os.getenv("EU_ROLE"))
+        )
+        self.com_roles["na"] = self.guilds[0].get_role(
+            int(os.getenv("NA_ROLE"))
+        )
+        self.com_roles["everyone"] = self.guilds[0].default_role
 
         self.com_channels["public-eu"] = self.guilds[0].get_channel(
             int(os.getenv("PUBLIC_EU_CHANNEL"))
@@ -157,31 +174,56 @@ class StackedBot(discord.Client):
             int(os.getenv("LOBBY_CHANNEL"))
         )
 
+        for role in self.com_roles:
+            if self.com_roles[role] is None:
+                print(f"Could not find {role} role")
+                quit()
+
         for channel in self.com_channels:
             if self.com_channels[channel] is None:
                 print(f"Could not find {channel} channel")
                 quit()
 
+        # Regions
+        self.region_configs = {
+            Region.EU: {
+                "channelId": "public-eu",
+                "tz": 1,
+                "role": self.com_roles["eu"]
+            }, 
+            Region.NA: {
+                "channelId": "public-na",
+                "tz": -6,
+                "role": self.com_roles["na"]
+            },
+        }
+
         print(f"{self.user.name} has connected to {self.guilds}!")
 
         # Setup notifications
-        self.setup_notifications("public-eu", 1)
-        self.setup_notifications("public-na", -6)
+        self.setup_notifications(Region.EU)
+        self.setup_notifications(Region.NA)
 
         self.initialized = True
 
     # The actual ingame time!
-    def ingame_time(self):
-        return datetime.now(timezone.utc) + timedelta(hours=1)
+    def ingame_time(self, region):
+        return datetime.now(timezone.utc) + timedelta(hours=self.region_configs[region]["tz"])
 
     # Initialize notifications
-    def setup_notifications(self, channelId, tz):
+    def setup_notifications(self, region):
         self.cronTab = []
+
+        config = self.region_configs[region]
+        channelId = config["channelId"]
+        tz = config["tz"]
+        role = config["role"]
 
         self.add_notification(
             "30 11,17,20 * * * 0",
             tz,
             self.com_channels[channelId],
+            region,
             "Energy to be claimed! Go go!",
         )
 
@@ -189,12 +231,14 @@ class StackedBot(discord.Client):
             "0 12 * * 1,4 0",
             tz,
             self.com_channels[channelId],
+            region,
             "Dragon is invading! Remember to fix ballista!",
         )
         self.add_notification(
             "30 20 * * 1,4 0",
             tz,
             self.com_channels[channelId],
+            region,
             "Dragon is leaving in 30 minutes! Remember to fix ballista!",
         )
 
@@ -202,13 +246,15 @@ class StackedBot(discord.Client):
             "0 21 * * * 0",
             tz,
             self.com_channels[channelId],
+            region,
             "Guild reward packs! Go claim some lewt!",
         )
 
         self.add_notification(
             "45 20 * * * 0", 
             tz,
-            self.com_channels[channelId], 
+            self.com_channels[channelId],
+            region,
             "15 minutes to arena rewards",
         )
 
@@ -216,6 +262,7 @@ class StackedBot(discord.Client):
             "15 21 * * * 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to underground rewards! Go get em castles :partying_face:",
         )
 
@@ -223,12 +270,14 @@ class StackedBot(discord.Client):
             "0 5 * * 3 0",
             tz,
             self.com_channels[channelId],
+            region,
             "Sphinx is coming today, save up some movement!",
         )
         self.add_notification(
             "0 9 * * 3 0",
             tz,
             self.com_channels[channelId],
+            region,
             "Sphinx is here, go play trivia!",
         )
 
@@ -237,24 +286,28 @@ class StackedBot(discord.Client):
             "45 8 * * 3 0",
             tz,
             self.com_channels[channelId],
-            f"15 minutes to KvK starts!! {self.everyone}",
+            region,
+            f"15 minutes to KvK starts!! {role}",
         )
         self.add_notification(
             "45 8 * * 4,5 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes till today's KvK rounds start!",
         )
         self.add_notification(
             "45 21 * * 3,4 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to KvK rewards! Go get em Kingdoms :partying_face:",
         )
         self.add_notification(
             "45 21 * * 5 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to KvK ends! Go get em Kingdoms :partying_face:",
         )
 
@@ -263,6 +316,7 @@ class StackedBot(discord.Client):
             "45 19 * * 2 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to group game in BoG! Remember rosters!",
             StackedBot.bog_week,
         )
@@ -270,6 +324,7 @@ class StackedBot(discord.Client):
             "45 19 * * 3 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to Battle of Gods quarter finals! Go place your bets and rosters :partying_face:",
             StackedBot.bog_week,
         )
@@ -277,6 +332,7 @@ class StackedBot(discord.Client):
             "45 19 * * 4 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to Battle of Gods finals! Go place your bets and rosters :partying_face:",
             StackedBot.bog_week,
         )
@@ -286,6 +342,7 @@ class StackedBot(discord.Client):
             "15 19 * * 2 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to qualification games in CoG! Remember rosters!",
             StackedBot.cog_week,
         )
@@ -293,6 +350,7 @@ class StackedBot(discord.Client):
             "15 19 * * 3 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to qualification games in CoG  Remember rosters",
             StackedBot.cog_week,
         )
@@ -300,6 +358,7 @@ class StackedBot(discord.Client):
             "15 19 * * 4 0",
             tz,
             self.com_channels[channelId],
+            region,
             "15 minutes to CoG finals! Go place your bets and rosters :partying_face:",
             StackedBot.cog_week,
         )
@@ -309,12 +368,14 @@ class StackedBot(discord.Client):
             "0 9 * * 1,4 0",
             tz,
             self.com_channels[channelId],
+            region,
             '"Endless" inferno is here, go climb the ladder!',
         )
         self.add_notification(
             "30 11 * * 1,4 0",
             tz,
             self.com_channels[channelId],
+            region,
             '"Endless" inferno refresh in 30 minutes!',
         )
 
@@ -322,7 +383,8 @@ class StackedBot(discord.Client):
         self.add_notification(
             "0 5,12,18,21 * * * 0",
             tz, 
-            None, 
+            None,
+            region,
             "mystical",
         )
 
@@ -331,6 +393,7 @@ class StackedBot(discord.Client):
             "0 5,8,11,14,17,20,23 * * * 0",
             tz,
             None,
+            region,
             "emblem",
         )
 
@@ -339,16 +402,17 @@ class StackedBot(discord.Client):
             "0 5 1 * * 0",
             tz,
             self.com_channels[channelId],
-            f"New premium deck out! Activate it BEFORE starting dailies! {self.everyone}",
+            region,
+            f"New premium deck out! Activate it BEFORE starting dailies! {role}",
         )
 
     # Wrapper for adding notifications
-    def add_notification(self, time, tz, channel, message, active=None):
+    def add_notification(self, time, tz, channel, region, message, active=None):
         self.cronTab.append(
             aiocron.crontab(
                 time,
                 func=partial(
-                    StackedBot.send_notification, self, channel, message, active
+                    StackedBot.send_notification, self, channel, region, message, active
                 ),
                 start=True,
                 tz=timezone(timedelta(hours=tz)),
@@ -356,25 +420,25 @@ class StackedBot(discord.Client):
         )
 
     # Return true if qualifying_week for BoG
-    # def qualifying_week(self):
-    #     now = self.ingame_time()
+    # def qualifying_week(self, region):
+    #     now = self.ingame_time(region)
     #     year, week_num, day_of_week = now.isocalendar()
     #     qualifying_week = week_num % 2
     #     return not qualifying_week
 
     # Return true if CoG week
-    def cog_week(self):
-        now = self.ingame_time()
+    def cog_week(self, region):
+        now = self.ingame_time(region)
         year, week_num, day_of_week = now.isocalendar()
         return week_num % 2 == 0
 
     # Return true if BoG week
-    def bog_week(self):
-        return not self.cog_week()
+    def bog_week(self, region):
+        return not self.cog_week(region)
 
     # Send notifications
-    async def send_notification(self, channel, msg, active=None):
-        if active is not None and active(self) and channel is not None:
+    async def send_notification(self, channel, region, msg, active=None):
+        if active is not None and active(self, region) and channel is not None:
             await channel.send(f"{msg}")
         elif active is None and channel is not None:
             await channel.send(f"{msg}")
@@ -382,7 +446,7 @@ class StackedBot(discord.Client):
             message = f"{msg.capitalize()} store has refreshed"
             for id in self.remind_me[msg]:
                 user = self.guilds[0].get_member(id)
-                if user:
+                if user and self.region_configs[region]["role"] in user.roles:
                     await user.send(message)
 
     # Reaction translation stuff
@@ -441,7 +505,7 @@ class StackedBot(discord.Client):
         msg = message.content.lower()
 
         if msg.startswith("!"):
-            response = self.handle_command(msg, message)
+            response = await self.handle_command(msg, message)
             if response is not None:
                 await message.channel.send(f"{response}")
             return
@@ -469,7 +533,7 @@ class StackedBot(discord.Client):
         return self.bot.get_response(msg)
 
     # Command switch
-    def handle_command(self, msg, full_message):
+    async def handle_command(self, msg, full_message):
         response = None
         if msg.startswith("!help"):
             response = self.help(msg)
@@ -493,6 +557,8 @@ class StackedBot(discord.Client):
             response = self.inspireme(msg)
         elif msg.startswith("!remindme"):
             response = self.handle_remind_me(full_message)
+        elif msg.startswith("!role"):
+            response = await self.handle_role(full_message)
         return response
 
     # Reminder registration
@@ -515,6 +581,24 @@ class StackedBot(discord.Client):
         else:
             self.remind_me[event_name].append(message.author.id)
             return f"I'll remind you of {event_name}"
+
+    # Role registration
+    async def handle_role(self, message):
+        valid_roles = ["EU", "NA"]
+        msg = message.content.lower()
+        role_raw = msg.split()
+        if len(role_raw) == 1:
+            return 'What role you want to be added to? "EU" or "NA"?'
+        role_name = role_raw[1]
+        if role_name not in valid_roles:
+            return "Don't know that role..."
+
+        role = self.region_configs[role_name]["role"]
+        if role in message.author:
+            return f"I'll stop notifying you of {role_name} events"
+        else:
+            await message.author.add_roles(role)
+            return f"I'll remind you of {role_name} events"
 
     # HALP!
     def help(self, message):
@@ -618,20 +702,23 @@ class StackedBot(discord.Client):
     # Calculates progression in KvK based on current situation
     def kvk_calc(self, message):
         components = message.split()
-        if len(components) != 9:
+        region = Region.EU
+        if len(components) < 9 or len(components) > 10:
             return (
                 "Usage: !kvkcalc <OurCurrent> <TheirCurrent> <OurGain1> "
-                "<TheirGain1> <OurGain2> <TheirGain2> <OurGain3> <TheirGain3>"
+                "<TheirGain1> <OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <region=EU>"
             )
         try:
             ourCurrent = int(components[1])
             theirCurrent = int(components[2])
             ourGain = [int(components[3]), int(components[5]), int(components[7])]
             theirGain = [int(components[4]), int(components[6]), int(components[8])]
+            if len(components) == 10:
+                region = Region[components[9]]
         except:
             return "Could not understand that.."
 
-        now = self.ingame_time()
+        now = self.ingame_time(region)
         remainingTime = 22.0 - now.hour + (now.minute / 60)
 
         ourGoal = ourCurrent + sum([arena * remainingTime for arena in ourGain])
@@ -650,7 +737,19 @@ class StackedBot(discord.Client):
 
     # Prepares message containing respose to !events
     def events_message(self, msg):
-        now = self.ingame_time()
+        components = msg.split()
+        region = Region.EU
+        if len(components) < 1 or len(components) > 2:
+            return (
+                "Usage: !event(s) <region=EU>"
+            )
+        try:
+            if len(components) == 2:
+                region = Region[components[1]]
+        except:
+            return "Could not understand that.."
+
+        now = self.ingame_time(region)
         year, week_num, day_of_week = now.isocalendar()
         cog_week = week_num % 2 == 0
 
