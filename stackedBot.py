@@ -611,7 +611,7 @@ class StackedBot(discord.Client):
         response += "!remis <keyword> - Deletes my knowledge of keyword\n"
         response += (
             "!kvkcalc <OurCurrent> <TheirCurrent> <OurGain1> <TheirGain1> "
-            "<OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Region=[Default:EU, NA]> - See if we win KvK\n"
+            "<OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Total=[Default:False, True]> <Region=[Default:EU, NA]> - See if we win KvK\n"
         )
         response += (
             "React to a message with your flag, and I'll translate that for you\n"
@@ -705,23 +705,32 @@ class StackedBot(discord.Client):
     def kvk_calc(self, message):
         components = message.split()
         region = Region.EU
-        if len(components) < 9 or len(components) > 10:
+        total = False
+        if len(components) < 9 or len(components) > 11:
             return (
                 "Usage: !kvkcalc <OurCurrent> <TheirCurrent> <OurGain1> "
-                "<TheirGain1> <OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Region=[Default:EU, NA]>"
+                "<TheirGain1> <OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Total=[Default:False, True]> <Region=[Default:EU, NA]>"
             )
         try:
             ourCurrent = int(components[1])
             theirCurrent = int(components[2])
             ourGain = [int(components[3]), int(components[5]), int(components[7])]
             theirGain = [int(components[4]), int(components[6]), int(components[8])]
-            if len(components) == 10:
-                region = Region[components[9].upper()]
+            if len(components) >= 10:
+                total = components[9].upper() == "TRUE"
+            if len(components) == 11:
+                region = Region[components[10].upper()]
         except:
             return "Could not understand that.."
 
         now = self.ingame_time(region)
-        remainingTime = 22.0 - now.hour + (now.minute / 60)
+        remainingTime = max(min(22.0 - now.hour + (now.minute / 60), 13), 0)
+        if total:
+            year, week_num, day_of_week = now.isocalendar()
+            if day_of_week == 3:
+                remainingTime += (13 * 2)
+            elif day_of_week == 4:
+                remainingTime += 13
 
         ourGoal = ourCurrent + sum([arena * remainingTime for arena in ourGain])
         theirGoal = theirCurrent + sum([arena * remainingTime for arena in theirGain])
