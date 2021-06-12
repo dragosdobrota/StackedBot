@@ -280,6 +280,13 @@ class StackedBot(discord.Client):
             region,
             "Sphinx is here, go play trivia!",
         )
+        self.add_notification(
+            "50 19 * * 5 0",
+            tz,
+            self.com_channels[channelId],
+            region,
+            f"10 minutes to Holy City Siege starts! Prepare your formations (and don't forget auto battle if you can't play!) {role}",
+        )
 
         # KvK
         self.add_notification(
@@ -736,7 +743,12 @@ class StackedBot(discord.Client):
         theirGoal = theirCurrent + sum([arena * remainingTime for arena in theirGain])
 
         diff = ourGoal - theirGoal
-        response = f"At the end of the day we'll be at {int(ourGoal)} and they at {int(theirGoal)}, "
+        response = "At the end of the "
+        if total:
+            response += "event"
+        else:
+            response += "day"
+        response += f" we'll be at {int(ourGoal)} and they at {int(theirGoal)}, "
         if diff > 0:
             response += " we're leading by "
         else:
