@@ -281,11 +281,11 @@ class StackedBot(discord.Client):
             "Sphinx is here, go play trivia!",
         )
         self.add_notification(
-            "50 19 * * 5 0",
+            "50 19 * * 6 0",
             tz,
             self.com_channels[channelId],
             region,
-            f"10 minutes to Holy City Siege starts! Prepare your formations (and don't forget auto battle if you can't play!) {role}",
+            f"10 minutes to Holy City Siege starts! Prepare your formations (and don't forget auto battle if you can't play!) {role.mention}",
         )
 
         # KvK
@@ -294,7 +294,7 @@ class StackedBot(discord.Client):
             tz,
             self.com_channels[channelId],
             region,
-            f"15 minutes to KvK starts!! {role}",
+            f"15 minutes to KvK starts!! {role.mention}",
         )
         self.add_notification(
             "45 8 * * 4,5 0",
@@ -410,7 +410,7 @@ class StackedBot(discord.Client):
             tz,
             self.com_channels[channelId],
             region,
-            f"New premium deck out! Activate it BEFORE starting dailies! {role}",
+            f"New premium deck out! Activate it BEFORE starting dailies! {role.mention}",
         )
 
     # Wrapper for adding notifications
