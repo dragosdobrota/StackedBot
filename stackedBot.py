@@ -317,6 +317,13 @@ class StackedBot(discord.Client):
             region,
             "15 minutes to KvK ends! Go get em Kingdoms :partying_face:",
         )
+        self.add_notification(
+            "00 19 * * 5 0",
+            tz,
+            self.com_channels[channelId],
+            region,
+            f"3 Hours to KvK ends! Don't forget to use your sweeps! {role.mention}",
+        )
 
         # BoG
         self.add_notification(
