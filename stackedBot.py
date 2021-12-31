@@ -281,7 +281,7 @@ class StackedBot(discord.Client):
             "Sphinx is here, go play trivia!",
         )
         self.add_notification(
-            "50 19 * * 6 0",
+            "50 18 * * 6 0",
             tz,
             self.com_channels[channelId],
             region,
