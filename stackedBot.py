@@ -34,9 +34,13 @@ from googletrans import Translator
 # SPREAD_SHEET='1ksHbbJGGaPI4ytMUeXfNmy33ejuw3YznP4XDor1GaMA'
 
 from enum import Enum
+
+
 class Region(Enum):
     EU = 1
     NA = 2
+    AU = 3
+
 
 load_dotenv()
 
@@ -81,6 +85,7 @@ class StackedBot(discord.Client):
         self.com_roles = {
             "eu": None,
             "na": None,
+            "au": None,
             "everyone": None,
         }
 
@@ -88,6 +93,7 @@ class StackedBot(discord.Client):
         self.com_channels = {
             "public-eu": None,
             "public-na": None,
+            "public-au": None,
             "lobby": None,
         }
 
@@ -156,12 +162,9 @@ class StackedBot(discord.Client):
         if self.initialized:
             return
 
-        self.com_roles["eu"] = self.guilds[0].get_role(
-            int(os.getenv("EU_ROLE"))
-        )
-        self.com_roles["na"] = self.guilds[0].get_role(
-            int(os.getenv("NA_ROLE"))
-        )
+        self.com_roles["eu"] = self.guilds[0].get_role(int(os.getenv("EU_ROLE")))
+        self.com_roles["na"] = self.guilds[0].get_role(int(os.getenv("NA_ROLE")))
+        self.com_roles["au"] = self.guilds[0].get_role(int(os.getenv("AU_ROLE")))
         self.com_roles["everyone"] = self.guilds[0].default_role
 
         self.com_channels["public-eu"] = self.guilds[0].get_channel(
@@ -169,6 +172,9 @@ class StackedBot(discord.Client):
         )
         self.com_channels["public-na"] = self.guilds[0].get_channel(
             int(os.getenv("PUBLIC_NA_CHANNEL"))
+        )
+        self.com_channels["public-au"] = self.guilds[0].get_channel(
+            int(os.getenv("PUBLIC_AU_CHANNEL"))
         )
         self.com_channels["lobby"] = self.guilds[0].get_channel(
             int(os.getenv("LOBBY_CHANNEL"))
@@ -189,12 +195,17 @@ class StackedBot(discord.Client):
             Region.EU: {
                 "channelId": "public-eu",
                 "tz": 1,
-                "role": self.com_roles["eu"]
-            }, 
+                "role": self.com_roles["eu"],
+            },
             Region.NA: {
                 "channelId": "public-na",
                 "tz": -6,
-                "role": self.com_roles["na"]
+                "role": self.com_roles["na"],
+            },
+            Region.AU: {
+                "channelId": "public-au",
+                "tz": 6,
+                "role": self.com_roles["au"],
             },
         }
 
@@ -203,12 +214,15 @@ class StackedBot(discord.Client):
         # Setup notifications
         self.setup_notifications(Region.EU)
         self.setup_notifications(Region.NA)
+        self.setup_notifications(Region.AU)
 
         self.initialized = True
 
     # The actual ingame time!
     def ingame_time(self, region):
-        return datetime.now(timezone.utc) + timedelta(hours=self.region_configs[region]["tz"])
+        return datetime.now(timezone.utc) + timedelta(
+            hours=self.region_configs[region]["tz"]
+        )
 
     # Initialize notifications
     def setup_notifications(self, region):
@@ -251,7 +265,7 @@ class StackedBot(discord.Client):
         )
 
         self.add_notification(
-            "45 20 * * * 0", 
+            "45 20 * * * 0",
             tz,
             self.com_channels[channelId],
             region,
@@ -396,7 +410,7 @@ class StackedBot(discord.Client):
         # Mystical store
         self.add_notification(
             "0 5,12,18,21 * * * 0",
-            tz, 
+            tz,
             None,
             region,
             "mystical",
@@ -598,14 +612,14 @@ class StackedBot(discord.Client):
 
     # Role registration
     async def handle_role(self, message):
-        valid_roles = ["EU", "NA"]
+        valid_roles = ["EU", "NA", "AU"]
         msg = message.content
         role_raw = msg.split()
         if len(role_raw) == 1:
-            return 'What role you want to be added to? "EU" or "NA"?'
+            return 'What role you want to be added to? "EU", "NA" or "AU"?'
         role_name = role_raw[1]
         if role_name not in valid_roles:
-            return "Don't know that role... (supported 'EU' and 'NA')"
+            return "Don't know that role... (supported 'EU', 'NA' and 'AU')"
 
         role = self.region_configs[Region[role_name.upper()]]["role"]
         if role in message.author.roles:
@@ -618,14 +632,14 @@ class StackedBot(discord.Client):
     # HALP!
     def help(self, message):
         response = f"Version {get_version()}\n"
-        response += "!event <Region=[Default:EU, NA]> - Todays events\n"
-        response += "!events <Region=[Default:EU, NA]> - This weeks events\n"
+        response += "!event <Region=[Default:EU, NA, AU]> - Todays events\n"
+        response += "!events <Region=[Default:EU, NA, AU]> - This weeks events\n"
         response += "!whatis <keyword> - Explains what keyword is\n"
         response += "!addis <keyword> <explanation> - Teach me what keyword means\n"
         response += "!remis <keyword> - Deletes my knowledge of keyword\n"
         response += (
             "!kvkcalc <OurCurrent> <TheirCurrent> <OurGain1> <TheirGain1> "
-            "<OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Total=[Default:False, True]> <Region=[Default:EU, NA]> - See if we win KvK\n"
+            "<OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Total=[Default:False, True]> <Region=[Default:EU, NA, AU]> - See if we win KvK\n"
         )
         response += (
             "React to a message with your flag, and I'll translate that for you\n"
@@ -634,7 +648,9 @@ class StackedBot(discord.Client):
         response += "!urban <stuff> - I'll lookup stuff on Urban Dictionary\n"
         response += "!inspireme - I'll generate an inspirational quote\n"
         response += "!remindme <event> - I'll notify you about event in pm\n"
-        response += "!role <EU/NA> - I'll notify you about events for that region in pm\n"
+        response += (
+            "!role <EU/NA/AU> - I'll notify you about events for that region in pm\n"
+        )
         response += "Mention me and I'll respond something stupid :partying_face:"
 
         return response
@@ -723,7 +739,7 @@ class StackedBot(discord.Client):
         if len(components) < 9 or len(components) > 11:
             return (
                 "Usage: !kvkcalc <OurCurrent> <TheirCurrent> <OurGain1> "
-                "<TheirGain1> <OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Total=[Default:False, True]> <Region=[Default:EU, NA]>"
+                "<TheirGain1> <OurGain2> <TheirGain2> <OurGain3> <TheirGain3> <Total=[Default:False, True]> <Region=[Default:EU, NA, AU]>"
             )
         try:
             ourCurrent = int(components[1])
@@ -742,7 +758,7 @@ class StackedBot(discord.Client):
         if total:
             year, week_num, day_of_week = now.isocalendar()
             if day_of_week == 3:
-                remainingTime += (13 * 2)
+                remainingTime += 13 * 2
             elif day_of_week == 4:
                 remainingTime += 13
 
@@ -770,9 +786,7 @@ class StackedBot(discord.Client):
         components = msg.split()
         region = Region.EU
         if len(components) < 1 or len(components) > 2:
-            return (
-                "Usage: !event(s) <Region=[Default:EU, NA]>"
-            )
+            return "Usage: !event(s) <Region=[Default:EU, NA, AU]>"
         try:
             if len(components) == 2:
                 region = Region[components[1].upper()]
